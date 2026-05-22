@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Building2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Plus, Trash2, Loader2 } from "lucide-react";
+import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 type AdditionalDetail = {
   firm_name: string;
@@ -761,49 +763,68 @@ const AddClient = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card shadow-card">
-        <div className="container mx-auto px-6 py-4 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Add New Client</h1>
-            <p className="text-xs text-muted-foreground">Step {step + 1} of {steps.length}</p>
-          </div>
-        </div>
-      </header>
+  const canSave =
+    !!additionalDetails[0]?.firm_name?.trim() && !!additionalDetails[0]?.promoter_name?.trim();
 
-      <main className="container mx-auto px-6 py-8 max-w-3xl">
+  return (
+    <AppShell
+      title="Add client"
+      subtitle={`Step ${step + 1} of ${steps.length} · ${steps[step]}`}
+      documentTitle="Add client"
+    >
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-4xl mx-auto">
+        <PageHeader
+          title="Add a new client"
+          description="Capture the appraisal profile across KYC, financials, debt and CMA in a guided flow."
+        />
+
         {/* Step indicator */}
-        <div className="flex items-center gap-1 mb-8 overflow-x-auto pb-2">
-          {steps.map((s, i) => (
-            <div key={s} className="flex items-center">
-              <button onClick={() => setStep(i)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  i === step ? "bg-primary text-primary-foreground" :
-                  i < step ? "bg-success text-success-foreground" :
-                  "bg-muted text-muted-foreground"
-                }`}>
-                {i < step ? <Check className="w-3 h-3" /> : null}
-                <span className="whitespace-nowrap">{s}</span>
-              </button>
-              {i < steps.length - 1 && <div className="w-4 h-px bg-border mx-1" />}
-            </div>
-          ))}
+        <div className="mb-6">
+          <div className="flex items-center gap-1 overflow-x-auto pb-2 -mx-1 px-1">
+            {steps.map((s, i) => {
+              const state = i === step ? "current" : i < step ? "done" : "todo";
+              return (
+                <div key={s} className="flex items-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setStep(i)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      state === "current"
+                        ? "bg-primary text-primary-foreground"
+                        : state === "done"
+                        ? "bg-success/15 text-success hover:bg-success/25"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {state === "done" ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      <span className="w-4 h-4 rounded-full bg-current/10 text-[10px] inline-flex items-center justify-center font-semibold">
+                        {i + 1}
+                      </span>
+                    )}
+                    <span className="whitespace-nowrap">{s}</span>
+                  </button>
+                  {i < steps.length - 1 && <div className="w-4 h-px bg-border mx-1" />}
+                </div>
+              );
+            })}
+          </div>
+          <div className="h-1 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+            />
+          </div>
         </div>
 
         <Card className="shadow-card animate-fade-in">
           <CardHeader>
-            <CardTitle>{steps[step]}</CardTitle>
+            <CardTitle className="text-base">{steps[step]}</CardTitle>
           </CardHeader>
           <CardContent>
             {renderStep()}
-            <div className="flex justify-between mt-8">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 mt-8 pt-6 border-t border-border">
               <Button variant="outline" onClick={() => setStep(step - 1)} disabled={step === 0}>
                 <ArrowLeft className="w-4 h-4 mr-2" /> Previous
               </Button>
@@ -812,16 +833,28 @@ const AddClient = () => {
                   Next <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button onClick={handleSave} disabled={loading || !additionalDetails[0]?.firm_name || !additionalDetails[0]?.promoter_name}>
-                  {loading ? "Saving..." : "Save Client"}
-                  <Check className="w-4 h-4 ml-2" />
+                <Button onClick={handleSave} disabled={loading || !canSave}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…
+                    </>
+                  ) : (
+                    <>
+                      Save client <Check className="w-4 h-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               )}
             </div>
+            {step === steps.length - 1 && !canSave && (
+              <p className="text-xs text-muted-foreground mt-3 text-right">
+                Firm name and promoter name are required to save.
+              </p>
+            )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 };
 
